@@ -265,6 +265,11 @@ class ParserVisitor {
   class OberonTypeVisitor extends OberonBaseVisitor[Unit] {
     var baseType: Type = _
 
+    override def visitListType(ctx: OberonParser.ListTypeContext
+    ): Unit = {
+        val baseType = visitOberonType(ctx.baseType) // ctx.baseType agora existe
+        this.baseType = ListType(baseType) // Corrigido: atribuir à variável baseType da classe
+    }
     override def visitIntegerType(
         ctx: OberonParser.IntegerTypeContext
     ): Unit = {
@@ -446,6 +451,16 @@ class ParserVisitor {
       exp = StringValue(str.slice(1, str.length() - 1))
     }
 
+    override def visitListValue(
+        ctx: OberonParser.ListValueContext
+    ): Unit = {
+      val elements = ctx.expression().asScala.toList.map { e =>
+      e.accept(this)
+      exp
+    }
+    exp = ListValue(elements)
+    }
+
     override def visitNullValue(ctx: OberonParser.NullValueContext): Unit =
       exp = NullValue
 
@@ -480,6 +495,26 @@ class ParserVisitor {
       exp = PointerAccessExpression(ctx.name.getText)
     }
 
+    override def visitConsExpression(
+        ctx: OberonParser.ConsExpressionContext
+    ): Unit = 
+    {
+    ctx.head.accept(this)
+    val headExp = exp
+
+    ctx.tail.accept(this)
+    val tailExp = exp
+
+    exp = ConsExpression(headExp, tailExp)
+    }
+
+    override def visitLenExpression(
+        ctx: OberonParser.LenExpressionContext
+    ): Unit = 
+    {
+    ctx.expression().accept(this)
+    exp = LenExpression(exp)
+    }
     override def visitRelExpression(
         ctx: OberonParser.RelExpressionContext
     ): Unit =

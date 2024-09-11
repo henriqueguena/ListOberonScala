@@ -98,7 +98,14 @@ class ExpressionTypeChecker(val typeChecker: TypeChecker, var env: Environment[T
           State[Environment[Type], Writer[List[String], Option[Type]]] {env => (env, Writer(List("Error. "), None))}
         }
   } 
-
+    case ListValue(elements) => 
+      val elementTypes = elements.map(e => checkExpression(e, env).runA(env).value.value.getOrElse(UndefinedType))
+      if (elementTypes.forall(_ == elementTypes.headOption.getOrElse(UndefinedType))) {
+        State[Environment[Type], Writer[List[String], Option[Type]]] { env => (env, Writer(List(), Some(ListType(elementTypes.headOption.getOrElse(UndefinedType)))))}
+        } else {
+          State[Environment[Type], Writer[List[String], Option[Type]]] { env => (env, Writer(List("Error: Elements have different types in list."), None))
+        }
+  }
 
     // Verifica se todos os elementos da array são do tipo esperado.
     case ArrayValue(values, arrayType) =>

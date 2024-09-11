@@ -269,8 +269,11 @@ def runInterpreter(module: OberonModule): IResult[Unit] = for {
     case NullValue => pure(NullValue)
     case Undef() => pure(Undef())
     case VarExpression(name) => evalVarExpression(name)
+    case ListValue(v) => pure(ListValue(v))
     //TODO eval array
     //case ArrayValue(v, t) =>
+    case ConsExpression(head, tail) => evalConsExpression(head, tail)
+    case LenExpression(list) => evalLenExpression(list)
     case ArraySubscript(a, i) => evalArraySubscript(ArraySubscript(a, i))
     case AddExpression(left, right) => arithmeticExpression(left, right, (v1: Number, v2: Number) => v1+v2)
     case SubExpression(left, right) => arithmeticExpression(left, right, (v1: Number, v2: Number) => v1-v2)
@@ -290,6 +293,22 @@ def runInterpreter(module: OberonModule): IResult[Unit] = for {
     // TODO FieldAccessExpression
     // TODO PointerAccessExpression
   }
+  def evalConsExpression(head: Expression, tail: Expression): IResult[Expression] = for {
+    evalHead <- evalExpression(head)  // Avalia a cabeça
+    evalTail <- evalExpression(tail)  // Avalia a cauda
+    result <- pure(evalTail match {
+    case ListValue(values) => ListValue(evalHead :: values): Expression // Constrói uma nova lista
+    case _ => evalTail // Retorna a cauda original se não for uma lista
+  })
+} yield result
+
+  def evalLenExpression(list: Expression): IResult[Expression] = for {
+    listValue <- evalExpression(list) // Avalia a expressão da lista
+    result <- pure(listValue match {
+    case ListValue(values) => IntValue(values.size): Expression // Retorna o tamanho se for uma lista
+    case _ => listValue // Retorna o valor original sem checar o tipo
+  })
+  } yield result
 
   def evalVarExpression(name: String): IResult[Expression] = for {
     env <- get[Environment[Expression]]
