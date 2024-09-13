@@ -44,7 +44,20 @@ class ExpressionTypeChecker(val typeChecker: TypeChecker, var env: Environment[T
     case NullValue           => State[Environment[Type], Writer[List[String], Option[Type]]] {env => (env, Writer(List(), Some(NullType)))}
     case Undef()             => State[Environment[Type], Writer[List[String], Option[Type]]] {env => (env, Writer(List(), None))}
     case VarExpression(name) => State[Environment[Type], Writer[List[String], Option[Type]]] {env => (env, Writer(List(), typeChecker.env.lookup(name)))}
+    case ListValue(elements) => 
+  val elementTypes = elements.map(e => checkExpression(e, env).runA(env).value.value.getOrElse(UndefinedType))
 
+  if (elementTypes.forall(_ == elementTypes.headOption.getOrElse(UndefinedType))) {
+    // Se todos os elementos têm o mesmo tipo, retorna o tipo da lista com esse tipo
+    State[Environment[Type], Writer[List[String], Option[Type]]] { env =>
+      (env, Writer(List(), Some(ListType(elementTypes.headOption.getOrElse(UndefinedType)))))
+    }
+  } else {
+    // Caso contrário, retorna um erro
+    State[Environment[Type], Writer[List[String], Option[Type]]] { env =>
+      (env, Writer(List("Error: Elements have different types in the list."), None))
+    }
+  }
   //   /* Verifica se a variável avaliada já foi definida anteriormente, 
   //   se não for definida retorna None. A mensagem de erro é retornada pelo checkStmt*/
   //   case VarExpression(name) => typeChecker.env.lookup(name)
