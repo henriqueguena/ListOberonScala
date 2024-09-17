@@ -82,8 +82,11 @@ expression
  | left = expression opr = ('MOD' | '*' | '/' | '&&') right = expression                  #MultExpression
  | left = expression opr = ('+' | '-' | '||') right = expression                          #AddExpression
  | '(' formals? ')' '=>' expression                                                       #LambdaExpression
- | 'CONS' '(' head = expression ',' tail = expression ')'                                 #ConsExpression
+ | 'CONS' '(' head = expression ')'                                                       #ConsExpression
  | 'LEN' '(' list = expression ')'                                                        #LenExpression
+ | listBase = expression '[' index = expression ']'                                       #ListSubscript
+ | 'CONCAT' '(' list1 = expression ',' list2 = expression ')'                             #ConcatExpression
+ | 'REMOVE' '(' item = expression ',' list = expression ')'                               #RemoveExpression
  ;
 
 qualifiedName

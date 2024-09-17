@@ -217,7 +217,10 @@ case class NotExpression(exp: Expression) extends Expression
 case class LambdaExpression(args: List[FormalArg], exp: Expression)
     extends Expression
 case class LenExpression(exp: Expression) extends Expression 
-case class ConsExpression(head: Expression, tail: Expression) extends Expression 
+case class ConsExpression(head: Expression) extends Expression
+case class ListSubscript(listBase: Expression, index: Expression) extends Expression
+case class ConcatExpression(list1: Expression, list2: Expression) extends Expression
+case class RemoveExpression(item: Expression, list: Expression) extends Expression
 
 /* Statements */
 trait Statement {

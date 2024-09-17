@@ -272,9 +272,12 @@ def runInterpreter(module: OberonModule): IResult[Unit] = for {
     case ListValue(v) => pure(ListValue(v))
     //TODO eval array
     //case ArrayValue(v, t) =>
-    case ConsExpression(head, tail) => evalConsExpression(head, tail)
+    case ConsExpression(head) => evalConsExpression(head)
     case LenExpression(list) => evalLenExpression(list)
+    case ConcatExpression(list1, list2) => evalConcatExpression(list1, list2)
+    case RemoveExpression(item, list) => evalRemoveExpression(item, list)
     case ArraySubscript(a, i) => evalArraySubscript(ArraySubscript(a, i))
+    case ListSubscript(a, i) => evalListSubscript(ListSubscript(a, i))
     case AddExpression(left, right) => arithmeticExpression(left, right, (v1: Number, v2: Number) => v1+v2)
     case SubExpression(left, right) => arithmeticExpression(left, right, (v1: Number, v2: Number) => v1-v2)
     case MultExpression(left, right) => arithmeticExpression(left, right, (v1: Number, v2: Number) => v1*v2)
@@ -293,20 +296,43 @@ def runInterpreter(module: OberonModule): IResult[Unit] = for {
     // TODO FieldAccessExpression
     // TODO PointerAccessExpression
   }
-  def evalConsExpression(head: Expression, tail: Expression): IResult[Expression] = for {
-    evalHead <- evalExpression(head)  // Avalia a cabeça
-    evalTail <- evalExpression(tail)  // Avalia a cauda
-    result <- pure(evalTail match {
-    case ListValue(values) => ListValue(evalHead :: values): Expression // Constrói uma nova lista
-    case _ => evalTail // Retorna a cauda original se não for uma lista
-  })
-} yield result
+  def evalConsExpression(head: Expression): IResult[Expression] = {
+    for {
+        evalHead <- evalExpression(head) // Evaluate the head
+    } yield {
+        ListValue(evalHead :: Nil) // Create a new list with the evaluated head
+    }
+  }
 
-  def evalLenExpression(list: Expression): IResult[Expression] = for {
-    listValue <- evalExpression(list) // Avalia a expressão da lista
-    result <- pure(listValue match {
-    case ListValue(values) => IntValue(values.size): Expression // Retorna o tamanho se for uma lista
-    case _ => listValue // Retorna o valor original sem checar o tipo
+
+  def evalLenExpression(listExpr: Expression): IResult[Expression] = {
+  for {
+    evalList <- evalExpression(listExpr) // Avalia a expressão da lista
+  } yield {
+    IntValue(evalList.asInstanceOf[ListValue].value.length) // Calcula o comprimento da lista diretamente
+  }
+  }
+
+  def evalConcatExpression(left: Expression, right: Expression): IResult[Expression] = {
+    for {
+      leftValue <- evalExpression(left) // Avalia a expressão da esquerda
+      rightValue <- evalExpression(right) // Avalia a expressão da direita
+    } yield {
+      (leftValue, rightValue) match {
+        case (ListValue(l), ListValue(r)) =>
+          ListValue(l ++ r) // Concatena as duas listas
+        case _ =>
+          throw new RuntimeException("Error: concat expects two lists.")
+      }
+    }
+  } 
+
+  def evalRemoveExpression(item: Expression, list: Expression): IResult[Expression] = for {
+    evalItem <- evalExpression(item)  // Avalia a lista
+    evalList <- evalExpression(list)  // Avalia o elemento a ser removido
+    result <- pure(evalList match {
+    case ListValue(values) => ListValue(values.filterNot(_ == evalItem)): Expression // Remove o elemento da lista
+    case _ => evalList // Retorna a lista original se não for uma lista
   })
   } yield result
 
@@ -325,6 +351,15 @@ def runInterpreter(module: OberonModule): IResult[Unit] = for {
       case (ArrayValue(values: ListBuffer[Expression], _), IntValue(v)) => values(v)
       case _ => throw new RuntimeException
     }
+  
+  def evalListSubscript(listSubscript: ListSubscript): IResult[Expression] = for {
+    list <- evalExpression(listSubscript.listBase)
+    idx <- evalExpression(listSubscript.index)
+  } yield (list, idx) match {
+    case (ListValue(elements), IntValue(v)) if v >= 0 && v < elements.length => elements(v)
+    case _ => throw new RuntimeException("Invalid list index or type mismatch.")
+  }
+
 
   def evalFunctionCall(name: String, args: List[Expression]): IResult[Expression] =  for {
     env <- get[Environment[Expression]]

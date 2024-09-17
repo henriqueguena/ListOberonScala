@@ -3258,4 +3258,35 @@ class ParserTestSuite extends AbstractTestSuite {
     assert(x == VariableDeclaration("x", ReferenceToUserDefinedType("ld")))
   }
 
+  test("Testing removeExpression") {
+  val module = ScalaParser.parseResource("stmts/list.oberon")
+
+  assert(module.name == "list")
+  assert(module.variables.size == 5)
+  assert(module.variables.head == VariableDeclaration("a", ListType(IntegerType)))
+  assert(module.variables(1) == VariableDeclaration("b", ListType(IntegerType)))
+  assert(module.variables(2) == VariableDeclaration("c", IntegerType))
+  assert(module.variables(3) == VariableDeclaration("d", ListType(IntegerType)))
+  assert(module.variables(4) == VariableDeclaration("e", ListType(IntegerType)))
+
+  // Teste para o ConsExpression
+  val expectedA = ConsExpression(IntValue(3))
+  assert(module.constants.size == 1)
+  assert(module.constants.head == Constant("a", expectedA))
+
+  // Teste para o LenExpression
+  val expectedC = LenExpression(ConsExpression(IntValue(3)))
+  assert(module.constants.size == 2)
+  assert(module.constants(1) == Constant("c", expectedC))
+
+  // Teste para o ConcatExpression
+  val expectedD = ConcatExpression(ConsExpression(IntValue(3)), ConsExpression(IntValue(4)))
+  assert(module.constants.size == 3)
+  assert(module.constants(2) == Constant("d", expectedD))
+
+  // Teste para o RemoveExpression
+  val expectedE = RemoveExpression(IntValue(3), ConcatExpression(ConsExpression(IntValue(3)), ConsExpression(IntValue(4))))
+  assert(module.constants.size == 4)
+  assert(module.constants(3) == Constant("e", expectedE))
+}
 }

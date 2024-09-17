@@ -1,5 +1,6 @@
 package br.unb.cic.oberon.tc
 
+import br.unb.cic.oberon.ir.ast._
 import br.unb.cic.oberon.ir.ast.{AddExpression, BoolValue, BooleanType, DivExpression, EQExpression, IntValue, IntegerType, SubExpression, Type}
 import br.unb.cic.oberon.interpreter.Interpreter
 import org.scalatest.funsuite.AnyFunSuite
@@ -18,6 +19,55 @@ class ExpressionTypeVisitorTestSuite extends AnyFunSuite {
     assert(visitor.checkExpression(bTrue, visitor.env).runA(visitor.env).value.value == Some(BooleanType))
     assert(visitor.checkExpression(bFalse, visitor.env).runA(visitor.env).value.value == Some(BooleanType))
   }
+
+  test("test len expression") {
+    val env = new Environment[Type]()
+    val visitor = new ExpressionTypeChecker(new TypeChecker(env), env)
+    val list = ListValue(List(IntValue(2), IntValue(3), IntValue(4)))
+
+    val lenExp = LenExpression(list)
+
+    assert(visitor.checkExpression(lenExp, visitor.env).runA(visitor.env).value.value == Some(IntegerType))
+  }
+
+  test("test cons expression") {
+  val env = new Environment[Type]()
+  val visitor = new ExpressionTypeChecker(new TypeChecker(env), env)
+  val lista = ConsExpression(IntValue(1))
+
+  assert(visitor.checkExpression(lista, visitor.env).runA(visitor.env).value.value == Some(ListType(IntegerType)))
+  }
+
+  test("test concat expression") {
+  val env = new Environment[Type]()
+  val visitor = new ExpressionTypeChecker(new TypeChecker(env), env)
+  
+  // Crie duas listas
+  val list1 = ListValue(List(IntValue(1), IntValue(2)))
+  val list2 = ListValue(List(IntValue(3), IntValue(4)))
+  
+  // Crie uma expressão de concatenação
+  val concatExp = ConcatExpression(list1, list2)
+  
+  // Verifique se a expressão concat é do tipo esperado
+  assert(visitor.checkExpression(concatExp, visitor.env).runA(visitor.env).value.value == Some(ListType(IntegerType)))
+  }
+
+  test("test remove expression") {
+  val env = new Environment[Type]()
+  val visitor = new ExpressionTypeChecker(new TypeChecker(env), env)
+  
+  // Crie uma lista e o item a ser removido
+  val list = ListValue(List(IntValue(1), IntValue(2), IntValue(3), IntValue(4)))
+  val itemToRemove = IntValue(3)
+  
+  // Crie uma expressão de remoção
+  val removeExp = RemoveExpression(itemToRemove, list)
+  
+  // Verifique se a expressão remove é do tipo esperado
+  assert(visitor.checkExpression(removeExp, visitor.env).runA(visitor.env).value.value == Some(ListType(IntegerType)))
+  }
+
 
   test("Test expression type on add expressions") {
     val env = new Environment[Type]()
