@@ -1,5 +1,4 @@
 MODULE list;
-
 VAR
     a : list;
     b : list;
